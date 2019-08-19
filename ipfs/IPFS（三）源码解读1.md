@@ -1,8 +1,104 @@
 # IPFS（三）源码解读之-add
 
+Add 所作的事其实就是将文件传到IPFS上，通过块的方式存到本地blockstore中。
 
+在ipfs的安装目录的blocks目录下保存了当前本地节点所存储的所有的块数据，具体有没有对数据加密，我也没有仔细去看
 
+Ps:我去看了一下，并没有加密，原文存储，这里需要批评一下...
 
+首先，add的入口在core/commands/add.go文件，这是一个命令行工具，主要作用是提供交互以及命令的一下定义和相关配置对应的不同功能的解析，这里真的只是解析，然后保存到AddedObject这个对象中，这个对象的作用就是当上传是的关于文件的一下配置信息，和一些操作。
+
+```go
+type AddedObject struct {
+   Name        string
+   Hash        string `json:",omitempty"`
+   Bytes       int64  `json:",omitempty"`
+   Size        string `json:",omitempty"`
+   VID         string `json:",omitempty"`
+   VersionInfo *utils.VersionInfo
+}
+```
+
+然后，通过下面这种看起来很奇怪的方式去上传文件的数据量，具体后面的块生成部分我们不去探讨，这里只看是怎么从本地读取到节点，并将这个流送入块中的
+
+其实下面做的事非常简单，先定义好addAllAndPin这个方法，这个方法最主要的作用就是对文件路径进行遍历，也就是我们在命令行输入的路径，读取文件内容，通过fileAdder.AddFile(file)将文件写入到下一步
+
+而下面的协程用于监听上传是否完成，是否有错误。并将错误信息丢入errCh管道，并且关闭output这个管道，
+
+作用在于这两个管道被用于向控制台输出。output是输出上传情况，上传完成后的块hash等，errCh就是错误信息
+
+```go
+addAllAndPin := func(f files.File) error {
+   // Iterate over each top-level file and add individually. Otherwise the
+   // single files.File f is treated as a directory, affecting hidden file
+   // semantics.
+   for {
+      file, err := f.NextFile()
+      if err == io.EOF {
+         // Finished the list of files.
+         break
+      } else if err != nil {
+         return err
+      }
+      if err := fileAdder.AddFile(file); err != nil {
+         return err
+      }
+   }
+
+   // copy intermediary nodes from editor to our actual dagservice
+   _, err := fileAdder.Finalize()
+   if err != nil {
+      return err
+   }
+
+   if hash {
+      return nil
+   }
+
+   return fileAdder.PinRoot()
+}
+
+errCh := make(chan error)
+go func() {
+   var err error
+   defer func() { errCh <- err }()
+   defer close(outChan)
+   err = addAllAndPin(req.Files)
+}()
+defer res.Close()
+
+err = res.Emit(outChan)
+if err != nil {
+	log.Error(err)
+	return
+	}
+err = <-errCh
+if err != nil {
+	res.SetError(err, cmdkit.ErrNormal)
+}
+
+```
+
+下面进入具体上传工作的函数，也就是fileAdder.AddFile(file)，fileAddrer是上面生成一个AddedObject这个结构体的对象，它有一些工具方法，AddFile就是用于上传的对外接口，在core/coreunix/add.go文件中
+
+```go
+func (adder *Adder) AddFile(file files.File) error {
+   if adder.Pin {
+      adder.unlocker = adder.blockstore.PinLock()
+   }
+   defer func() {
+      if adder.unlocker != nil {
+         adder.unlocker.Unlock()
+      }
+   }()
+
+   return adder.addFile(file, false, nil)
+}
+```
+
+主要就是几个锁的设置，继续调用内部的addFile方法，到这里其实就以及开始上传了，后面的代码就不分析了，有兴趣的小伙伴可以自己去看一下
+
+下面是命令行入口add.go的全部内容
 
 ```go
 package commands
