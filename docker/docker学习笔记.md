@@ -28,7 +28,7 @@ docker pull ubuntu
 
 ​	  没有镜像名称则默认查看本地所有的镜像
 
-### 镜像重命名
+### 镜像重命名 
 
 重命名本地镜像名称和版本
 
@@ -380,6 +380,8 @@ docker rename 9690aba0bf05 ubuntu3
 
 1 数据卷可以在容器之间共享和重用，本地与容器间传递数据更高效；
 
+吗
+
 2 对数据卷的修改会立马有效，容器与本地目录均可；
 
 3 对数据卷的更新，不会影响镜像，对数据与应用进行了解耦操作；
@@ -399,3 +401,111 @@ docker rename 9690aba0bf05 ubuntu3
 
 
 #### 数据卷之文件
+
+命令格式：docker run -itd --name [容器名字] -v [宿主机文件]:[容器文件][镜像名称] [命令(可选)]
+
+
+
+PS：很奇怪，我明明挂载目录到容器内部，但是，目录下的文件却不可以访问，直接挂载文件却可以访问
+
+### 数据卷容器
+
+什么是数据卷容器？ 需要在多个容器之间共享一些持续更新的数据，最简单的方式是使用数据卷容器。数据卷容器 
+
+也是一个容器，但是它的目的是专门用来提供数据卷供其他容器挂载。 
+
+数据卷容器（Data Volume Containers）：使用特定容器维护数据卷 
+
+简单点：数据卷容器就是为其他容器提供数据交互存储的容器
+
+命令格式：docker run -v/--volumes-from list
+
+从指定的容器挂载数据卷
+
+创建一个数据卷容器：docker create -v [容器数据卷目录] --name [容器名字] [镜像名字] [命令(可选)]
+
+#### 数据卷容器实战
+
+##### 创建一个数据卷容器
+
+\#命令格式： 
+
+docker create -v [容器数据卷目录] --name [容器名字][镜像名称] [命令(可选)] 
+
+\#执行效果 
+
+$ docker create -v /data --name v1-test1 nginx 
+
+##### 创建两个容器，同时挂载数据卷容器
+
+\#命令格式： 
+
+docker run --volumes-from [数据卷容器id/name] -tid --name [容器名字][镜像名称] [命令(可 
+
+选)] 
+
+\#执行效果： 
+
+\#创建 vc-test1 容器: 
+
+docker run --volumes-from 4693558c49e8 -tid --name vc-test1 nginx /bin/bash 
+
+\#创建 vc-test2 容器: 
+
+docker run --volumes-from 4693558c49e8 -tid --name vc-test2 nginx /bin/bash 
+
+##### 确认容器共享
+
+\#进入vc-test1，操作数据卷容器: 
+
+:~$ docker exec -it vc-test1 /bin/bash 
+
+root@c408f4f14786:/# ls /data/ 
+
+root@c408f4f14786:/# echo 'v-test1' > /data/v-test1.txt 
+
+root@c408f4f14786:/# exit 
+
+\#进入vc-test2，确认数据卷: 
+
+:~$ docker exec -it vc-test2 /bin/bash 
+
+root@7448eee82ab0:/# echo 'v-test2' > /data/v-test2.txt 
+
+root@7448eee82ab0:/# ls /data/ 
+
+v-test1.txt 
+
+root@7448eee82ab0:/# exit 
+
+\#回到vc-test1进行验证 
+
+:~$ docker exec -it vc-test1 /bin/bash 
+
+root@c408f4f14786:/# ls /data/ 
+
+v-test1.txt v-test2.txt 
+
+root@c408f4f14786:/# cat /data/v-test2.txt 
+
+v-test2 
+
+PS:这个真的很简单也很实用，目前能想到的使用点有日志沟通，数据库临时缓存，共同文件。
+
+
+
+## Docker网络管理
+
+### 端口映射详解
+
+默认情况下，容器和宿主机之间网络是隔离的，我们可以通过端口映射的方式，将容器中的端口，映射到宿主机的 
+
+某个端口上。这样我们就可以通过宿主机的ip+port的方式来访问容器里的内容
+
+### Docker的端口映射
+
+1、随机映射 -P(大写) 
+
+2、指定映射 -p 宿主机ip:宿主机端口:容器端口
+
+ps:一般默认情况下不会使用随机映射，但是随机映射的好处就是有docker分配端口，端口不会冲突

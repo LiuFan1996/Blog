@@ -84,7 +84,11 @@ MVVM是Model-View-ViewModel的简写。它本质上就是MVC 的改进版。MVVM
 ```
 v-if与v-show的区别相当去v-if时对应dom的操作，v-show是对元素的css操作，推荐操作频繁的组建使用v-show，不长使用的使用v-if
 
-#### v-bind绑定标签上的属性（内置的属性和自定义的属性）简写直接使用冒号
+#### v-bind绑定标签上的和 
+
+
+
+#### 属性（内置的属性和自定义的属性）简写直接使用冒号
 
 ```vue
 <a v-bind:herf="herf">...</a>
@@ -208,7 +212,7 @@ balanceFilter: function (balance) {
 Vue 通过 `watch` 选项提供了一个更通用的方法，来响应数据的变化。当需要在数据变化时执行异步或开销较大的操作时，这个方式是最有用的。
 
 ```vue
-<!DOCTYPE html>
+*/DOCTYPE html>
 <html>
     <head>
         <title>
@@ -225,12 +229,12 @@ Vue 通过 `watch` 选项提供了一个更通用的方法，来响应数据的�
         //不能直接监听数组或对象，但是可以监听数组或对象的最小单元（需要深度监视）
         //总结watch只能监听基本数据类型
             new Vue({
-                el:"#app",
+                el:"#app",m  
                 data : function(){
                     return {
                         msg:"",
-                    }
-                },
+                    }01
+                },	qqv514dxbcnvmbn
                watch:{
                    msg:function(newVal,oldVal){
                        console.log(newVal,oldVal)
@@ -239,7 +243,7 @@ Vue 通过 `watch` 选项提供了一个更通用的方法，来响应数据的�
             });
         </script>
     </body>
-</html>
+</html> k   
 ```
 
 ## Vue组件
