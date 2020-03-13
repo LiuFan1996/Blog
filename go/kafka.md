@@ -1,4 +1,4 @@
-# kafka学习
+# Kafka学习
 
 ## 核心概念
 
@@ -70,7 +70,45 @@ kafka代理是无状态的，所以使用zookeeper来维护它们的集群状态
 
 将数据从应用程序中导入到kafka，或者从kafka导出数据到应用程序，例如文件中数据导入到kafka，从kafka中将数据导出到文件中
 
-## kafka中的消息模型
+## 生产者往Kafka发送数据的流程
+
+1：生产者向kafka集群获取leader的信息
+
+2：生产者将消息发送给leader
+
+3：leader接受消息写入本地磁盘
+
+4：follower从leader拉取消息
+
+5：follower将消息写入本地磁盘后向生产者发送ACK
+
+6：leader获取到所有follower的ACK后向生产者发送ACK
+
+## 选择partition的原则
+
+在Kafka中，如果某个topic有多个partition，producer又怎么知道该将数据发往那个partition呢？Kafka中有几个原则：
+
+1：partition在写入的时候可以制定需要写入的partition,如果有指定，则写入对应的分区。
+
+2：如果没有指定分区，但是设置了key，则会根据key的值hash出一个分区。
+
+3：如果既没有指定分区，也没有key，则会采用轮询的方式，即每次取一小段时间数据写入某分区，下一小段写入下一个分区。
+
+## 生产者往Kafka发送数据的模式
+
+1： 0表示把数据发送个leader就成功效率最高，安全性最低
+
+2：1表示把数据发送给leader，等待leadr回ACK
+
+3：all表示把数据发送给leader，follower从leader拉回数据回复ack给leader，leader在回复Ack；安全性最高
+
+## 分区存储文件的原理
+
+## 为什么Kafka快？
+
+## 消费者组消费数据的原理
+
+## Kafka中的消息模型
 
 队列：同名的消费者组员瓜分消息
 
